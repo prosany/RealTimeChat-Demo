@@ -3,6 +3,7 @@ const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const mongoose = require("mongoose");
+const DeviceDetector = require("node-device-detector");
 require("dotenv").config({});
 
 let url =
@@ -18,6 +19,7 @@ mongoose.connect(url, {
 const messageSchema = new mongoose.Schema({
   content: String,
   date: { type: Date, default: Date.now },
+  device: { type: Object },
 });
 
 // create message model
@@ -74,8 +76,12 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", async (msg) => {
     try {
+      const deviceDetector = new DeviceDetector();
+      const device = deviceDetector.detect(
+        socket.request.headers["user-agent"]
+      );
       // save message to database
-      const message = new Message({ content: msg });
+      const message = new Message({ content: msg, device: { ...device } });
       await message.save();
       // get all messages from the database
       const messages = await Message.find({});

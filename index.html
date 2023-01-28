@@ -105,7 +105,7 @@
     </style>
   </head>
   <body>
-    <main class="w-full h-[100vh]">
+    <main class="w-full">
       <header
         class="bg-white text-gray-900 py-2 text-center font-pacifico shadow-sm flex justify-center items-center w-full"
       >
@@ -161,6 +161,11 @@
       // handle form submission
       document.querySelector("form").addEventListener("submit", (e) => {
         e.preventDefault();
+        var regex = /^\s*$/gim;
+        if (regex.test(document.getElementById("m").value)) {
+          alert("Form cannot be submitted as it only contains spaces.");
+          return;
+        }
         socket.emit("chat message", document.getElementById("m").value);
         document.getElementById("m").value = "";
         document.getElementById("messages").focus();
@@ -173,9 +178,12 @@
         window.scrollTo(0, document.body.scrollHeight);
         messages.reverse().forEach((message, idx) => {
           const li = document.createElement("li");
+          console.log(message);
           li.innerHTML = `<p>${message.content}</p><p class="text-xs">${moment(
             message.date
-          ).fromNow()}</p>`;
+          ).fromNow()} - ${message.device.os.name} (${
+            message.device.client.family
+          })</p>`;
           li.classList.add("list-none");
           li.classList.add(idx === 0 ? "bg-rose-50" : "bg-slate-100");
           li.classList.add("my-3");
@@ -235,7 +243,9 @@
           const li = document.createElement("li");
           li.innerHTML = `<p>${message.content}</p><p class="text-xs">${moment(
             message.date
-          ).fromNow()}</p>`;
+          ).fromNow()} - ${message.device.os.name} (${
+            message.device.client.family
+          })</p>`;
           li.classList.add("list-none");
           li.classList.add("bg-slate-100");
           li.classList.add("my-3");
