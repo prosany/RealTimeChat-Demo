@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,400;0,500;0,700;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <title>Real-Time Chat</title>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              ubuntu: ["Ubuntu", "sans-serif"],
+              pacifico: ["Pacifico", "cursive"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .dot-pulse {
+        position: relative;
+        left: -9999px;
+        width: 5px;
+        height: 5px;
+        border-radius: 5px;
+        background-color: rgb(99 102 241);
+        color: rgb(99 102 241);
+        box-shadow: 9999px 0 0 -5px;
+        animation: dot-pulse 1.5s infinite linear;
+        animation-delay: 0.25s;
+      }
+      .dot-pulse::before,
+      .dot-pulse::after {
+        content: "";
+        display: inline-block;
+        position: absolute;
+        top: 0;
+        width: 5px;
+        height: 5px;
+        border-radius: 5px;
+        background-color: rgb(99 102 241);
+        color: rgb(99 102 241);
+      }
+      .dot-pulse::before {
+        box-shadow: 9984px 0 0 -5px;
+        animation: dot-pulse-before 1.5s infinite linear;
+        animation-delay: 0s;
+      }
+      .dot-pulse::after {
+        box-shadow: 10014px 0 0 -5px;
+        animation: dot-pulse-after 1.5s infinite linear;
+        animation-delay: 0.5s;
+      }
+
+      @keyframes dot-pulse-before {
+        0% {
+          box-shadow: 9984px 0 0 -5px;
+        }
+        30% {
+          box-shadow: 9984px 0 0 2px;
+        }
+        60%,
+        100% {
+          box-shadow: 9984px 0 0 -5px;
+        }
+      }
+      @keyframes dot-pulse {
+        0% {
+          box-shadow: 9999px 0 0 -5px;
+        }
+        30% {
+          box-shadow: 9999px 0 0 2px;
+        }
+        60%,
+        100% {
+          box-shadow: 9999px 0 0 -5px;
+        }
+      }
+      @keyframes dot-pulse-after {
+        0% {
+          box-shadow: 10014px 0 0 -5px;
+        }
+        30% {
+          box-shadow: 10014px 0 0 2px;
+        }
+        60%,
+        100% {
+          box-shadow: 10014px 0 0 -5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="w-full h-[100vh]">
+      <header
+        class="bg-white text-gray-900 py-2 text-center font-pacifico shadow-sm flex justify-center items-center w-full"
+      >
+        <div class="mr-2">
+          <img
+            src="https://cdn.discordapp.com/attachments/1053913335281766400/1068789563499216986/icons8-chat.gif"
+            alt=""
+            class="w-[25px]"
+          />
+        </div>
+        <h1>
+          Universal Messages
+          <p class="font-ubuntu text-xs">Group Messaging System</p>
+        </h1>
+      </header>
+      <div id="messages" class="px-2 pb-[120px]"></div>
+
+      <div class="fixed bottom-0 left-0 w-full bg-slate-300 p-3">
+        <form class="flex justify-between items-center">
+          <input
+            id="m"
+            autocomplete="off"
+            placeholder="Type Your Message Here..."
+            class="border rounded-full w-[100%] bg-white px-4 py-3"
+          />
+          <button
+            class="bg-indigo-500 text-white rounded-full w-[50px] h-[50px] ml-2"
+          >
+            Send
+          </button>
+        </form>
+        <div
+          id="typing-indicator"
+          class="text-xs pl-2 mt-2"
+          style="display: none"
+        >
+          <div class="snippet" data-title="dot-pulse">
+            <div class="stage flex items-center">
+              <p class="text-indigo-700 text-sm">Someone is Typing</p>
+              <div class="dot-pulse ml-5"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script>
+      var socket = io();
+      let typingTimeoutId = null;
+
+      // handle form submission
+      document.querySelector("form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        socket.emit("chat message", document.getElementById("m").value);
+        document.getElementById("m").value = "";
+        document.getElementById("messages").focus();
+      });
+
+      // handle messages
+      socket.on("chat messages", (messages) => {
+        // clear the messages div
+        document.getElementById("messages").innerHTML = "";
+        window.scrollTo(0, document.body.scrollHeight);
+        messages.reverse().forEach((message, idx) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<p>${message.content}</p><p class="text-xs">${moment(
+            message.date
+          ).fromNow()}</p>`;
+          li.classList.add("list-none");
+          li.classList.add(idx === 0 ? "bg-rose-50" : "bg-slate-100");
+          li.classList.add("my-3");
+          li.classList.add("rounded-lg");
+          li.classList.add("px-5");
+          li.classList.add("py-2");
+          li.classList.add("text-black");
+          li.classList.add(idx === 0 && "border-rose-200");
+          li.classList.add("border");
+          li.classList.add(idx === 0 && "animate-pulse");
+          document.getElementById("messages").appendChild(li);
+        });
+      });
+
+      const formInput = document.getElementById("m");
+
+      formInput.addEventListener("focus", () => {
+        // Send a "start typing" event to the server
+        socket.emit("start typing");
+      });
+
+      formInput.addEventListener("blur", () => {
+        // Send a "stop typing" event to the server
+        socket.emit("stop typing");
+      });
+
+      socket.on("start typing", () => {
+        // Show the typing indicator
+        document.getElementById("typing-indicator").style.display = "block";
+      });
+
+      socket.on("stop typing", () => {
+        // Hide the typing indicator
+        document.getElementById("typing-indicator").style.display = "none";
+      });
+
+      formInput.addEventListener("keyup", () => {
+        console.log("Typing...");
+        socket.emit("start typing");
+        clearTimeout(typingTimeoutId);
+
+        typingTimeoutId = setTimeout(() => {
+          // Send a "stop typing" event to the server
+          socket.emit("stop typing");
+        }, 3000);
+      });
+
+      async function loadMessages() {
+        const response = await fetch("/messages");
+        const messages = await response.json();
+
+        const messageContainer = document.getElementById("messages");
+        messageContainer.innerHTML = "";
+        window.scrollTo(0, document.body.scrollHeight);
+
+        messages.forEach((message) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<p>${message.content}</p><p class="text-xs">${moment(
+            message.date
+          ).fromNow()}</p>`;
+          li.classList.add("list-none");
+          li.classList.add("bg-slate-100");
+          li.classList.add("my-3");
+          li.classList.add("rounded-lg");
+          li.classList.add("px-5");
+          li.classList.add("py-2");
+          li.classList.add("text-black");
+          li.classList.add("border");
+          messageContainer.appendChild(li);
+        });
+      }
+      window.addEventListener("load", loadMessages);
+    </script>
+  </body>
+</html>
